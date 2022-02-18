@@ -1018,7 +1018,12 @@ trades_with_token_units as (
              LEFT OUTER JOIN erc20.tokens s
                              ON s.contract_address = sell_token
              LEFT OUTER JOIN erc20.tokens b
-                             ON b.contract_address = buy_token
+                             ON b.contract_address =
+                                CASE
+                                    WHEN buy_token = '\xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
+                                        THEN '\xe91d153e0b41518a2ce8dd3d7944fa863463a97d'
+                                    ELSE buy_token
+                                    END
 ),
 
 valued_trades as (
@@ -1045,6 +1050,8 @@ valued_trades as (
                 WHEN sell_price IS NULL AND buy_price IS NOT NULL THEN buy_price * units_bought
                 ELSE NULL::numeric
                END)                 as trade_value_usd,
+           buy_price,
+           sell_price,
            buy_price * units_bought as buy_value_usd,
            sell_price * units_sold  as sell_value_usd,
            fee,
