@@ -28,6 +28,7 @@ WITH trades_with_prices AS (
                                      END)
                                  AND b.minute > TO_DATE('2021/03/03', 'YYYY/MM/DD') --! Deployment Date
                                  AND b.minute = date_trunc('minute', evt_block_time)
+    WHERE block_time >= '2022-01-01'
 ),
 
      trades_with_token_units as (
@@ -69,6 +70,7 @@ WITH trades_with_prices AS (
           FROM gnosis_protocol_v2."GPv2Settlement_call_settle"
                    JOIN gnosis_protocol_v2."GPv2Settlement_evt_Trade"
                         ON call_tx_hash = evt_tx_hash
+          WHERE block_time >= '2022-01-01'
           GROUP BY call_tx_hash, trades
          ),
 
@@ -80,7 +82,8 @@ WITH trades_with_prices AS (
      ),
 
      deduplicated_app_uid_map as (
-         select distinct on (uid) uid, app_data, receiver from uid_to_app_id
+         select distinct on (uid) uid, app_data, receiver
+         from uid_to_app_id
      ),
 
      valued_trades as (
@@ -157,6 +160,6 @@ CREATE INDEX view_trades_idx_6 ON gnosis_protocol_v2.view_trades (tx_hash);
 
 
 INSERT INTO cron.job (schedule, command)
-VALUES ('*/30 * * * *', 'REFRESH MATERIALIZED VIEW CONCURRENTLY gnosis_protocol_v2.view_trades')
+VALUES ('*/5 * * * *', 'REFRESH MATERIALIZED VIEW CONCURRENTLY gnosis_protocol_v2.view_trades')
 ON CONFLICT (command) DO UPDATE SET schedule=EXCLUDED.schedule;
 COMMIT;
